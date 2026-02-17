@@ -83,11 +83,14 @@ def download_whatsapp_media(media_url):
     return None
 
 def save_report(data):
-    """Save report to database"""
+    print("DEBUG: save_report() CALLED")   # 👈 ADD
+
     conn = get_db()
     c = conn.cursor()
     
     reference_id = generate_reference_id()
+    
+    print("DEBUG: inserting into DB...")   # 👈 ADD
     
     c.execute("""
         INSERT INTO cyber_reports (
@@ -126,21 +129,21 @@ def save_report(data):
         reference_id,
         "NEW",
         "MEDIUM",
-        1,  # consent_given
+        1,
         (datetime.now() + timedelta(days=app.config['DATA_RETENTION_DAYS'])).strftime("%Y-%m-%d"),
         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ))
-    
+
+    print("DEBUG: commit DB")   # 👈 ADD
+
     report_id = c.lastrowid
     conn.commit()
     conn.close()
+
+    print("DEBUG: DB saved successfully")   # 👈 ADD
     
-    # Log for audit
     log_audit("REPORT_CREATED", "cyber_reports", report_id, user_phone=data.get("phone"))
-    
-    # TODO: Sync with I4C API
-    # sync_to_i4c(report_id, reference_id, data)
-    
+
     return reference_id
 
 def sync_to_i4c(report_id, reference_id, data):
@@ -717,7 +720,6 @@ def debug_db():
     
     c.execute("SELECT id, fraud_medium, incident_type, created_at FROM cyber_reports ORDER BY id DESC LIMIT 10")
     rows = c.fetchall()
-    
     conn.close()
     return {"rows": rows}
 
