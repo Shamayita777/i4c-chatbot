@@ -709,6 +709,18 @@ def health_check():
         "service": "I4C Cyber Reporting Bot"
     })
 
+@app.route("/debug/db")
+def debug_db():
+    import sqlite3
+    conn = sqlite3.connect("cyber_reports.db")
+    c = conn.cursor()
+    
+    c.execute("SELECT id, fraud_medium, incident_type, created_at FROM cyber_reports ORDER BY id DESC LIMIT 10")
+    rows = c.fetchall()
+    
+    conn.close()
+    return {"rows": rows}
+
 if __name__ == "__main__":
     # Initialize database if it doesn't exist
     if not os.path.exists(app.config['DATABASE_PATH']):
