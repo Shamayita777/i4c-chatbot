@@ -91,7 +91,7 @@ def save_report(data):
     reference_id = generate_reference_id()
     
     print("DEBUG: inserting into DB...")   # 👈 ADD
-    
+    print("DEBUG: REPORT INSERTED")
     c.execute("""
         INSERT INTO cyber_reports (
             phone, location_city, location_state, language_preference,
