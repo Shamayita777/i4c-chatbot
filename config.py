@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Flask Configuration
 class Config:

@@ -1,14 +1,15 @@
-import sqlite3
+import psycopg2
+import os
 from datetime import datetime
 
 def init_database():
-    conn = sqlite3.connect("cyber_reports.db")
+    conn = psycopg2.connect(os.getenv("DATABASE_URL"))
     c = conn.cursor()
 
     # Main reports table with all I4C required fields
     c.execute("""
     CREATE TABLE IF NOT EXISTS cyber_reports (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         
         -- User Information
         phone TEXT,
@@ -70,7 +71,7 @@ def init_database():
     # Admin users table
     c.execute("""
     CREATE TABLE IF NOT EXISTS admin_users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         full_name TEXT,
@@ -85,7 +86,7 @@ def init_database():
     # Case notes/comments table
     c.execute("""
     CREATE TABLE IF NOT EXISTS case_notes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         report_id INTEGER NOT NULL,
         admin_id INTEGER NOT NULL,
         note TEXT NOT NULL,
@@ -99,7 +100,7 @@ def init_database():
     # Audit log for DPDP compliance
     c.execute("""
     CREATE TABLE IF NOT EXISTS audit_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         action TEXT NOT NULL,
         table_name TEXT,
         record_id INTEGER,
@@ -114,7 +115,7 @@ def init_database():
     # Analytics cache table
     c.execute("""
     CREATE TABLE IF NOT EXISTS analytics_cache (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         metric_name TEXT NOT NULL,
         metric_value TEXT,
         calculated_at TEXT NOT NULL,
@@ -125,7 +126,7 @@ def init_database():
     # User consent records for DPDP
     c.execute("""
     CREATE TABLE IF NOT EXISTS user_consents (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         phone TEXT NOT NULL,
         consent_type TEXT NOT NULL,  -- DATA_COLLECTION, DATA_SHARING, COMMUNICATION
         consent_given INTEGER DEFAULT 1,
@@ -149,7 +150,7 @@ def init_database():
     try:
         c.execute("""
             INSERT INTO admin_users (username, password_hash, full_name, email, role, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, (
             "admin",
             admin_pass,
@@ -158,7 +159,7 @@ def init_database():
             "SUPER_ADMIN",
             datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ))
-    except sqlite3.IntegrityError:
+    except psycopg2.IntegrityError:
         print("Default admin user already exists")
 
     conn.commit()
