@@ -96,17 +96,18 @@ def save_report(data):
     print("DEBUG: inserting into DB...")   # 👈 ADD
     print("DEBUG: REPORT INSERTED")
     c.execute("""
-        INSERT INTO cyber_reports (
-            phone, location_city, location_state, language_preference,
-            fraud_medium, incident_type, incident_description,
-            suspect_phone, suspect_email, suspect_upi_id, suspect_account_number,
-            suspect_bank_name, suspect_social_media, suspect_website_url, suspect_other_details,
-            transaction_id, amount_involved, payment_method,
-            evidence_text, evidence_hash, media_files,
-            anonymous, reference_id, status, priority,
-            consent_given, data_retention_date, created_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (
+    INSERT INTO cyber_reports (
+        phone, location_city, location_state, language_preference,
+        fraud_medium, incident_type, incident_description,
+        suspect_phone, suspect_email, suspect_upi_id, suspect_account_number,
+        suspect_bank_name, suspect_social_media, suspect_website_url, suspect_other_details,
+        transaction_id, amount_involved, payment_method,
+        evidence_text, evidence_hash, media_files,
+        anonymous, reference_id, status, priority,
+        consent_given, data_retention_date, created_at
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    RETURNING id
+""", (
         data.get("phone", "ANONYMOUS"),
         data.get("location_city"),
         data.get("location_state"),
@@ -139,8 +140,7 @@ def save_report(data):
 
     print("DEBUG: commit DB")   # 👈 ADD
 
-    c.execute("SELECT currval(pg_get_serial_sequence('cyber_reports','id'))")
-    report_id = c.fetchone()[0]
+    report_id = c.fetchone()['id']
     conn.commit()
     conn.close()
 
