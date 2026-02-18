@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import requests
 import traceback
 from config import Config, MESSAGES, FRAUD_MEDIUMS, INCIDENT_TYPES, INDIAN_STATES
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -26,7 +27,10 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # =============================================================================
 
 def get_db():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    return psycopg2.connect(
+        os.getenv("DATABASE_URL"),
+        cursor_factory=RealDictCursor
+    )
 
 
 def log_audit(action, table_name=None, record_id=None, user_id=None, user_phone=None, details=None):
@@ -101,7 +105,7 @@ def save_report(data):
             evidence_text, evidence_hash, media_files,
             anonymous, reference_id, status, priority,
             consent_given, data_retention_date, created_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         data.get("phone", "ANONYMOUS"),
         data.get("location_city"),
@@ -276,7 +280,7 @@ def whatsapp_bot():
             
             # Try to extract phone, email, UPI
             import re
-            phone_match = re.search(r'\+%s[\d\s-]{10,}', msg)
+            phone_match = re.search(r'\+?[\d\s-]{10,}', msg)
             email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', msg)
             upi_match = re.search(r'[\w\.-]+@[\w]+', msg)
             
