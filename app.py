@@ -723,6 +723,15 @@ def debug_db():
     conn.close()
     return {"rows": rows}
 
+@app.route("/init-db")
+def init_db_route():
+    try:
+        from db_init import init_database
+        init_database()
+        return {"status": "Database initialized successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     # Initialize database if it doesn't exist
     if not os.path.exists(app.config['DATABASE_PATH']):
