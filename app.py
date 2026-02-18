@@ -8,6 +8,7 @@ import os
 import json
 from datetime import datetime, timedelta
 import requests
+import traceback
 from config import Config, MESSAGES, FRAUD_MEDIUMS, INCIDENT_TYPES, INDIAN_STATES
 
 app = Flask(__name__)
@@ -350,9 +351,9 @@ def whatsapp_bot():
             state["step"] = "welcome"
     
     except Exception as e:
-        print(f"Error in WhatsApp bot: {e}")
-        reply.body(get_message(lang, "error"))
-        log_audit("BOT_ERROR", details={"error": str(e), "phone": phone})
+        print("🔥 FULL ERROR BELOW 🔥")
+        traceback.print_exc()
+        reply.body("DEBUG ERROR: " + str(e))   # temporary
     
     return str(resp)
 
