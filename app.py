@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, session, send_file
 from flask_cors import CORS
+import psycopg2
 from twilio.twiml.messaging_response import MessagingResponse
 from werkzeug.utils import secure_filename
-import sqlite3
 import hashlib
 import os
 import json
@@ -25,10 +25,8 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # =============================================================================
 
 def get_db():
-    """Get database connection"""
-    conn = sqlite3.connect(app.config['DATABASE_PATH'])
-    conn.row_factory = sqlite3.Row
-    return conn
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
+
 
 def log_audit(action, table_name=None, record_id=None, user_id=None, user_phone=None, details=None):
     """Log action for DPDP compliance"""
@@ -102,7 +100,7 @@ def save_report(data):
             evidence_text, evidence_hash, media_files,
             anonymous, reference_id, status, priority,
             consent_given, data_retention_date, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         data.get("phone", "ANONYMOUS"),
         data.get("location_city"),
@@ -136,7 +134,8 @@ def save_report(data):
 
     print("DEBUG: commit DB")   # 👈 ADD
 
-    report_id = c.lastrowid
+    c.execute("SELECT currval(pg_get_serial_sequence('cyber_reports','id'))")
+    report_id = c.fetchone()[0]
     conn.commit()
     conn.close()
 
@@ -204,7 +203,7 @@ def whatsapp_bot():
                 c = conn.cursor()
                 c.execute("""
                     INSERT INTO user_consents (phone, consent_type, consent_given, consent_date)
-                    VALUES (?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s)
                 """, (phone, "DATA_COLLECTION", 1, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
                 conn.commit()
                 conn.close()
@@ -384,7 +383,7 @@ def admin_login():
     c = conn.cursor()
     admin = c.execute("""
         SELECT * FROM admin_users 
-        WHERE username = ? AND password_hash = ? AND is_active = 1
+        WHERE username = %s AND password_hash = %s AND is_active = 1
     """, (username, password_hash)).fetchone()
     
     if admin:
@@ -577,7 +576,7 @@ def add_case_note(report_id):
     
     c.execute("""
         INSERT INTO case_notes (report_id, admin_id, note, note_type, created_at)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
     """, (
         report_id,
         session['admin_id'],
@@ -714,8 +713,7 @@ def health_check():
 
 @app.route("/debug/db")
 def debug_db():
-    import sqlite3
-    conn = sqlite3.connect("cyber_reports.db")
+    conn = get_db()
     c = conn.cursor()
     
     c.execute("SELECT id, fraud_medium, incident_type, created_at FROM cyber_reports ORDER BY id DESC LIMIT 10")
