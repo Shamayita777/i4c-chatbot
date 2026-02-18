@@ -140,7 +140,7 @@ def save_report(data):
 
     print("DEBUG: commit DB")   # 👈 ADD
 
-    report_id = c.fetchone()['id']
+    report_id = c.fetchone()[0]   # ✅ correct
     conn.commit()
     conn.close()
 
