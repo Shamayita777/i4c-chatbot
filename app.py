@@ -35,7 +35,7 @@ def log_audit(action, table_name=None, record_id=None, user_id=None, user_phone=
     c.execute("""
         INSERT INTO audit_log (action, table_name, record_id, user_id, user_phone, 
                               ip_address, details, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         action,
         table_name,
@@ -275,7 +275,7 @@ def whatsapp_bot():
             
             # Try to extract phone, email, UPI
             import re
-            phone_match = re.search(r'\+?[\d\s-]{10,}', msg)
+            phone_match = re.search(r'\+%s[\d\s-]{10,}', msg)
             email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', msg)
             upi_match = re.search(r'[\w\.-]+@[\w]+', msg)
             
@@ -389,7 +389,7 @@ def admin_login():
     if admin:
         # Update last login
         c.execute("""
-            UPDATE admin_users SET last_login = ? WHERE id = ?
+            UPDATE admin_users SET last_login = %s WHERE id = %s
         """, (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), admin['id']))
         conn.commit()
         
@@ -447,22 +447,22 @@ def get_reports():
     params = []
     
     if status:
-        query += " AND status = ?"
+        query += " AND status = %s"
         params.append(status)
     if fraud_medium:
-        query += " AND fraud_medium = ?"
+        query += " AND fraud_medium = %s"
         params.append(fraud_medium)
     if state:
-        query += " AND location_state = ?"
+        query += " AND location_state = %s"
         params.append(state)
     if date_from:
-        query += " AND created_at >= ?"
+        query += " AND created_at >= %s"
         params.append(date_from)
     if date_to:
-        query += " AND created_at <= ?"
+        query += " AND created_at <= %s"
         params.append(date_to + " 23:59:59")
     if search:
-        query += " AND (reference_id LIKE ? OR incident_description LIKE ? OR suspect_phone LIKE ?)"
+        query += " AND (reference_id LIKE %s OR incident_description LIKE %s OR suspect_phone LIKE %s)"
         search_term = f"%{search}%"
         params.extend([search_term, search_term, search_term])
     
@@ -471,7 +471,7 @@ def get_reports():
     total = c.execute(count_query, params).fetchone()[0]
     
     # Add pagination
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+    query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
     params.extend([per_page, (page - 1) * per_page])
     
     reports = c.execute(query, params).fetchall()
@@ -495,7 +495,7 @@ def get_report_details(report_id):
     conn = get_db()
     c = conn.cursor()
     
-    report = c.execute("SELECT * FROM cyber_reports WHERE id = ?", (report_id,)).fetchone()
+    report = c.execute("SELECT * FROM cyber_reports WHERE id = %s", (report_id,)).fetchone()
     
     if not report:
         conn.close()
@@ -506,7 +506,7 @@ def get_report_details(report_id):
         SELECT cn.*, au.username, au.full_name 
         FROM case_notes cn
         JOIN admin_users au ON cn.admin_id = au.id
-        WHERE cn.report_id = ?
+        WHERE cn.report_id = %s
         ORDER BY cn.created_at DESC
     """, (report_id,)).fetchall()
     
@@ -534,20 +534,20 @@ def update_report_status(report_id):
     conn = get_db()
     c = conn.cursor()
     
-    updates = ["status = ?", "updated_at = ?"]
+    updates = ["status = %s", "updated_at = %s"]
     params = [new_status, datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
     
     if priority:
-        updates.append("priority = ?")
+        updates.append("priority = %s")
         params.append(priority)
     
     if new_status == "RESOLVED":
-        updates.append("resolved_at = ?")
+        updates.append("resolved_at = %s")
         params.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     
     params.append(report_id)
     
-    c.execute(f"UPDATE cyber_reports SET {', '.join(updates)} WHERE id = ?", params)
+    c.execute(f"UPDATE cyber_reports SET {', '.join(updates)} WHERE id = %s", params)
     conn.commit()
     conn.close()
     
