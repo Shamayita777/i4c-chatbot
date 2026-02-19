@@ -121,6 +121,23 @@ def save_report(data):
 # =============================================================================
 # WHATSAPP BOT
 # =============================================================================
+def format_state_list(page=0, per_page=10):
+    start = page * per_page
+    end = start + per_page
+    states = INDIAN_STATES[start:end]
+
+    if not states:
+        return "No more states available."
+
+    msg = "📍 *Your Location*\n\nPlease select your state:\n\n"
+
+    for i, state in enumerate(states, 1):
+        msg += f"{i}. {state}\n"
+
+    if end < len(INDIAN_STATES):
+        msg += "\nType 'more' to see more states."
+
+    return msg
 
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp_bot():
@@ -183,20 +200,36 @@ def whatsapp_bot():
         elif state.get("step") == "incident_type":
             if msg in INCIDENT_TYPES.get(lang, {}):
                 state["incident_type"] = INCIDENT_TYPES['en'][msg]
-                reply.body(get_message(lang, "location_state"))
+                state["state_page"] = 0
+                reply.body(format_state_list(0))
                 state["step"] = "location_state"
             else:
                 reply.body(get_message(lang, "invalid_input"))
         
         # State
         elif state.get("step") == "location_state":
-            if msg.isdigit() and 1 <= int(msg) <= len(INDIAN_STATES):
-                state["location_state"] = INDIAN_STATES[int(msg) - 1]
+            page = state.get("state_page", 0)
+            per_page = 10
+            start = page * per_page
+            end = start + per_page
+            current_states = INDIAN_STATES[start:end]
+        # If user typed "more"
+            if msg.lower() == "more":
+                if end >= len(INDIAN_STATES):
+                    reply.body("No more states available.")
+                else:
+                    state["state_page"] = page + 1
+                    reply.body(format_state_list(state["state_page"]))
+        # If user selected a number
+            elif msg.isdigit() and 1 <= int(msg) <= len(current_states):
+                selected_state = current_states[int(msg) - 1]
+                state["location_state"] = selected_state
+                state["state_page"] = 0
                 reply.body(get_message(lang, "location_city"))
                 state["step"] = "location_city"
             else:
                 reply.body(get_message(lang, "invalid_input"))
-        
+
         # City
         elif state.get("step") == "location_city":
             state["location_city"] = msg.title()
