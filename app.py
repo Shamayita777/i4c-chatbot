@@ -243,7 +243,7 @@ def whatsapp_bot():
         print(f"Error: {e}")
         reply.body("Error occurred. Please try again or call 1930.")
     
-    return str(resp), 200, {'Content-Type': 'text/xml; charset=utf-8'}
+    return str(resp)
 
 # =============================================================================
 # ADMIN API
