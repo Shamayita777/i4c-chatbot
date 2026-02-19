@@ -133,6 +133,7 @@ def whatsapp_bot():
     try:
         # Welcome
         if state.get("step") == "welcome" or msg.lower() in ["start", "hi", "hello"]:
+            print("DEBUG MESSAGE:", get_message("en", "welcome"))
             reply.body(get_message("en", "welcome"))
             state["step"] = "language"
         
