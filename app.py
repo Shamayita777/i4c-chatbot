@@ -19,11 +19,10 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 CORS(
     app,
     supports_credentials=True,
-    resources={r"/api/*": {"origins": [
-        "https://i4c-dashboard-frontend.vercel.app"
-    ]}},
-    allow_headers=["Content-Type", "Authorization"],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    origins=[
+        "https://i4-c-dashboard-frontend.vercel.app",
+        "http://localhost:5173"
+    ]
 )
 
 # User conversation state (in-memory)
