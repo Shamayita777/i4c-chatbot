@@ -16,7 +16,15 @@ app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 
-CORS(app, supports_credentials=True, origins=['*'])
+CORS(
+    app,
+    supports_credentials=True,
+    resources={r"/api/*": {"origins": [
+        "https://i4c-dashboard-frontend.vercel.app"
+    ]}},
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
 
 # User conversation state (in-memory)
 user_state = {}
@@ -322,34 +330,56 @@ def get_reports():
         "total_pages": (total + per_page - 1) // per_page
     })
 
-@app.route("/api/admin/reports/<int:report_id>", methods=["GET"])
-def get_report_details(report_id):
+@app.route("/api/admin/reports/<int:report_id>/status", methods=["PUT", "OPTIONS"])
+def update_report_status(report_id):
+
+    # Handle CORS preflight
+    if request.method == "OPTIONS":
+        return '', 200
+
     if 'admin_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-    
+
+    data = request.json
+    new_status = data.get("status")
+    priority = data.get("priority")
+
+    if not new_status:
+        return jsonify({"error": "Status required"}), 400
+
     conn = get_db()
     c = conn.cursor()
+
+    # Check report exists
     c.execute("SELECT * FROM cyber_reports WHERE id = %s", (report_id,))
     report = c.fetchone()
-    
+
     if not report:
         conn.close()
         return jsonify({"error": "Not found"}), 404
-    
-    c.execute("""
-        SELECT cn.*, au.username, au.full_name 
-        FROM case_notes cn
-        JOIN admin_users au ON cn.admin_id = au.id
-        WHERE cn.report_id = %s
-        ORDER BY cn.created_at DESC
-    """, (report_id,))
-    notes = c.fetchall()
+
+    # UPDATE REPORT
+    updates = ["status = %s", "updated_at = NOW()"]
+    params = [new_status]
+
+    if priority:
+        updates.append("priority = %s")
+        params.append(priority)
+
+    if new_status == "RESOLVED":
+        updates.append("resolved_at = NOW()")
+
+    params.append(report_id)
+
+    c.execute(
+        f"UPDATE cyber_reports SET {', '.join(updates)} WHERE id = %s",
+        params
+    )
+
+    conn.commit()
     conn.close()
-    
-    return jsonify({
-        "report": dict(report),
-        "notes": [dict(n) for n in notes]
-    })
+
+    return jsonify({"success": True, "status": new_status})
 
 @app.route("/api/admin/analytics/overview", methods=["GET"])
 def get_analytics():
