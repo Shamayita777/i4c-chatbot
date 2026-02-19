@@ -329,6 +329,38 @@ def get_reports():
         "total_pages": (total + per_page - 1) // per_page
     })
 
+@app.route("/api/admin/reports/<int:report_id>", methods=["GET"])
+def get_report_details(report_id):
+
+    if 'admin_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("SELECT * FROM cyber_reports WHERE id = %s", (report_id,))
+    report = c.fetchone()
+
+    if not report:
+        conn.close()
+        return jsonify({"error": "Not found"}), 404
+
+    c.execute("""
+        SELECT cn.*, au.username, au.full_name
+        FROM case_notes cn
+        JOIN admin_users au ON cn.admin_id = au.id
+        WHERE cn.report_id = %s
+        ORDER BY cn.created_at DESC
+    """, (report_id,))
+    notes = c.fetchall()
+
+    conn.close()
+
+    return jsonify({
+        "report": dict(report),
+        "notes": [dict(n) for n in notes]
+    })
+
 @app.route("/api/admin/reports/<int:report_id>/status", methods=["PUT", "OPTIONS"])
 def update_report_status(report_id):
 
