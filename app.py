@@ -105,7 +105,7 @@ def save_report(data):
         (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d"),
         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ))
-    
+    report_id = c.fetchone()['id']
     conn.commit()
     conn.close()
     
@@ -138,13 +138,17 @@ def whatsapp_bot():
         
         # Language
         elif state.get("step") == "language":
-            if msg in {"1": "en", "2": "hi", "3": "gu"}:
-                state["language"] = {"1": "en", "2": "hi", "3": "gu"}[msg]
+            lang_map = {"1": "en", "2": "hi", "3": "gu"}
+            msg_clean = msg.strip()
+
+            if msg_clean in lang_map:
+                state["language"] = lang_map[msg_clean]
                 lang = state["language"]
                 reply.body(get_message(lang, "consent"))
                 state["step"] = "consent"
             else:
                 reply.body(get_message(lang, "invalid_input"))
+
         
         # Consent
         elif state.get("step") == "consent":
