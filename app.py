@@ -16,15 +16,11 @@ app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 
-CORS(
-    app,
-    supports_credentials=True,
-    resources={r"/api/*": {"origins": [
-        "https://i4c-dashboard-frontend.vercel.app"
-    ]}},
-    allow_headers=["Content-Type", "Authorization"],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-)
+and thsi will ibe like this:
+CORS(app, supports_credentials=True,
+     resources={r"/api/*": {"origins": "*"}},
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])?
 
 # User conversation state (in-memory)
 user_state = {}
