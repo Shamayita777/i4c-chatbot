@@ -474,14 +474,23 @@ def get_analytics():
         FROM cyber_reports
     """)
     total_amount = c.fetchone()['total']
-    
+    # STATE BREAKDOWN (Top 5)
+    c.execute("""
+        SELECT location_state, COUNT(*) as count
+        FROM cyber_reports
+        WHERE location_state IS NOT NULL
+        GROUP BY location_state
+        ORDER BY count DESC
+        LIMIT 5
+    """)
+    state_breakdown = c.fetchall()
     conn.close()
     
     return jsonify({
         "total_reports": total,
         "status_breakdown": [dict(r) for r in status_breakdown],
         "fraud_medium_breakdown": [dict(r) for r in fraud_breakdown],
-        "state_breakdown": [],
+        "state_breakdown": [dict(r) for r in state_breakdown],
         "daily_trend": [],
         "total_amount_involved": float(total_amount)
     })
